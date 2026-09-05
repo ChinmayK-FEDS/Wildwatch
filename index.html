@@ -486,8 +486,9 @@
       <span class="section-num mono">01</span>
     </div>
     <div class="overview-grid">
-      <p>Vehicle-animal collisions on highways running through forest and wildlife corridors are, in most cases, a reaction-time problem rather than a detection problem — by the time a driver sees an animal, there often isn't enough road left to stop. WildWatch addresses this directly: a radar and LoRa alert chain that senses movement near the road edge and pushes an early warning to drivers before the animal is in their line of sight.</p>
+      <p>Vehicle-animal collisions on highways running through forest and wildlife corridors are, in most cases, a reaction-time problem rather than a detection problem — by the time a driver sees an animal, there often isn't enough road left to stop. WildWatch addresses this directly: a radar and LoRa alert chain that senses movement near the road edge and pushes an early warning to drivers before the animal is in their line of sight. The same detection loop doubles as a field-boundary alert for agricultural land bordering forest corridors.</p>
       <p>The project began as a Terra Carta Design Lab entry from the National Institute of Design, Ahmedabad, and has since moved from a validated proof of concept into iterative hardware development, incubated out of NID's Bengaluru campus and built in collaboration with IISc Bengaluru. This page is the single working record of that development: what phase the project is in, what's shipped, the real field numbers, and the specific engineering calls made along the way.</p>
+      <p>Early on, the team weighed a camera-and-AI approach against a simpler radar-based one, and chose radar and LoRa for being far more tractable to build and field-harden quickly. Lab access at IISc Bengaluru, secured through Dr. G. R. Jayanth, made it possible to test the idea properly rather than on a bench alone — the first working field test recorded a 200m detection-to-alert range on campus in March 2026.</p>
       <div class="stat-row">
         <div class="stat">
           <div class="stat-value">Phase 2</div>
@@ -530,6 +531,48 @@
       </div>
     </div>
     <p style="margin-top:20px;">Detection triggers a roadside LED alert for approaching drivers and logs the event to a cloud dashboard, giving a record of crossing frequency and location over time — useful both for tuning sensor placement and for eventually making the case for where corridors need permanent signage.</p>
+    <p><strong>Sensor evaluation.</strong> The detection sensor has moved through several candidates rather than staying fixed: an early RCWL-0516 (5–7m range) proved the concept, then a HaiWang HW-HB100 (10–30m) carried Prototype v1 through the IISc field test. Phase 2 is evaluating two further candidates side by side — an HFS-DC06 and a DFRobot C4001 mmWave sensor — for reliable range without the RF self-interference the earlier setup ran into.</p>
+    <p><strong>Data pipeline.</strong> Detections flow over MQTT (TLS) to a cloud broker, into a Firebase Realtime Database, and out to a live web dashboard with CSV export. Firmware applies a 500ms confirmation filter and a 60-second cooldown to cut down false triggers and repeat alerts, with automatic reconnection for WiFi and MQTT so a dropped link doesn't lose events.</p>
+    <p><strong>A note on numbers:</strong> early technical documentation cited LoRa's spec-sheet range (multi-kilometre, open-field). The number that actually matters is the one measured in the field at IISc — about 200m at 433MHz — and that's the figure used everywhere on this page. The 868MHz migration is aimed at closing that gap between spec and reality, not just extending it further.</p>
+    <p style="margin-top:24px;"><strong>Capability summary</strong></p>
+    <div class="log" style="margin-top:8px;">
+      <div class="log-entry" style="grid-template-columns:1fr auto; align-items:center;">
+        <div class="log-title" style="margin-bottom:0;">Animal motion detection — radar with 500ms confirmation filter</div>
+        <span class="pill active">Working</span>
+      </div>
+      <div class="log-entry" style="grid-template-columns:1fr auto; align-items:center;">
+        <div class="log-title" style="margin-bottom:0;">Wireless long-range alert — LoRa, 200m tested (v1)</div>
+        <span class="pill active">Working</span>
+      </div>
+      <div class="log-entry" style="grid-template-columns:1fr auto; align-items:center;">
+        <div class="log-title" style="margin-bottom:0;">Roadside LED warning display</div>
+        <span class="pill active">Working</span>
+      </div>
+      <div class="log-entry" style="grid-template-columns:1fr auto; align-items:center;">
+        <div class="log-title" style="margin-bottom:0;">Real-time cloud logging &amp; web dashboard</div>
+        <span class="pill active">Working</span>
+      </div>
+      <div class="log-entry" style="grid-template-columns:1fr auto; align-items:center;">
+        <div class="log-title" style="margin-bottom:0;">False trigger suppression — confirmation filter + cooldown</div>
+        <span class="pill active">Working</span>
+      </div>
+      <div class="log-entry" style="grid-template-columns:1fr auto; align-items:center;">
+        <div class="log-title" style="margin-bottom:0;">Off-grid solar + battery operation</div>
+        <span class="pill planned">Prototype v2</span>
+      </div>
+      <div class="log-entry" style="grid-template-columns:1fr auto; align-items:center;">
+        <div class="log-title" style="margin-bottom:0;">Extended 500m range (868MHz)</div>
+        <span class="pill planned">Prototype v2</span>
+      </div>
+      <div class="log-entry" style="grid-template-columns:1fr auto; align-items:center;">
+        <div class="log-title" style="margin-bottom:0;">Environmental data logging (wind, vibration, orientation)</div>
+        <span class="pill planned">Prototype v2</span>
+      </div>
+      <div class="log-entry" style="grid-template-columns:1fr auto; align-items:center;">
+        <div class="log-title" style="margin-bottom:0;">Multi-node network — several transmitters to one receiver hub</div>
+        <span class="pill planned">Prototype v2</span>
+      </div>
+    </div>
   </section>
 
   <section id="timeline">
@@ -581,7 +624,7 @@
         <div class="rec-year">Ongoing</div>
         <div>
           <div class="rec-title">Independent field validation at IISc Bengaluru</div>
-          <p>Range, response time, and packet-loss testing for each hardware revision is carried out at IISc Bengaluru.</p>
+          <p>Range, response time, and packet-loss testing for each hardware revision is carried out at IISc Bengaluru, with lab access supported by Dr. G. R. Jayanth.</p>
         </div>
       </div>
     </div>
@@ -634,9 +677,12 @@
       duration: "Completed May 2026",
       actions: [
         "Terra Carta Design Lab Global Award — concept recognised and funded (2024)",
-        "HW-HB100 / RCWL-0516 radar + LoRa alert chain built and field-tested at IISc Bengaluru",
-        "Field numbers: ~200m range, <1s detection-to-alert response, <5% packet loss at 433MHz",
-        "Development base established at NID Ahmedabad's Bengaluru campus"
+        "FuturEarth Design Solutions Pvt. Ltd. incorporated, DPIIT-recognised; registered office in Jhansi, development base in Bengaluru; futurearth.co domain and company presence established",
+        "Built a complete transmitter unit (HW-HB100 microwave radar + ESP32 + LoRa module) and receiver unit (LoRa + ESP32 + P10 DMD LED display) from scratch",
+        "Full cloud pipeline live: detection → LoRa → MQTT (TLS) → Firebase Realtime Database → web dashboard, with live alerts, a cooldown timer, paginated detection history, date filtering, and CSV export",
+        "Firmware false-trigger suppression shipped: 500ms radar confirmation filter plus a 60-second post-alert cooldown, with auto-reconnect for WiFi and MQTT",
+        "Field-tested end-to-end at IISc Bengaluru: ~200m range, <1s detection-to-alert response, <5% packet loss at 433MHz",
+        "Meeting secured with UP Chief Minister Yogi Adityanath, presenting WildWatch for a potential state-level pilot"
       ]
     },
     {
@@ -647,16 +693,19 @@
         "Migrating sender/receiver compute from ESP32 to STM32 to remove RF interference between the board's three onboard radios",
         "GSM connectivity added to the sender unit as an independent link alongside LoRa",
         "Frequency migration from 433MHz to 868MHz in progress, targeting 500m+ range",
+        "Evaluating HFS-DC06 and DFRobot C4001 as next-generation detection sensors alongside the original HW-HB100",
         "Fresh hardware build each iteration, with prior units retained for comparison"
       ]
     },
     {
-      name: "LiDAR prototype",
+      name: "LiDAR & camera variants",
       status: "planned",
-      duration: "Planned · October – November",
+      duration: "Planned · September – November",
       actions: [
         "Introduce LiDAR sensing alongside the existing radar package",
-        "Evaluate detection range and accuracy gains against the Phase 2 baseline"
+        "Evaluate detection range and accuracy gains against the Phase 2 baseline",
+        "Explore an AI-based commercial camera variant and a separate IR camera variant for animal identification",
+        "Extended overnight field testing planned near Bengaluru"
       ]
     },
     {
@@ -678,6 +727,31 @@
   ];
 
   const logData = [
+    {
+      date: "Phase 1",
+      title: "Chose radar + LoRa over a camera/AI approach",
+      detail: "An AI/ML-based detection approach was considered early on but set aside as needing specialist capability the team didn't yet have. Radar + LoRa was the more tractable path to a working system quickly."
+    },
+    {
+      date: "Phase 1",
+      title: "Separated transmitter and receiver into a line-of-sight pair",
+      detail: "Rather than a sensor broadcasting in all directions, placing the transmitter and receiver in line of sight lets even a cheap sensor send a concentrated beam — a cleaner, more reliable trigger than omnidirectional sensing."
+    },
+    {
+      date: "Phase 1",
+      title: "Selected a scalable P10 DMD LED panel for the roadside display",
+      detail: "Weighed against smaller LED, LCD, and OLED options; the DMD panel was chosen for outdoor visibility and because its size scales cleanly for future installations."
+    },
+    {
+      date: "Phase 1",
+      title: "Built the cloud pipeline on MQTT (TLS) → Firebase → web dashboard",
+      detail: "Chosen for a permanent, timestamped record of every detection with minimal infrastructure — no dedicated server needed, and the dashboard works from any device."
+    },
+    {
+      date: "Phase 1",
+      title: "Added a 500ms confirmation filter and 60-second cooldown",
+      detail: "Firmware-level false-trigger suppression: a detection has to hold for 500ms to count, and the system won't re-fire for 60 seconds after an alert."
+    },
     {
       date: "Phase 2",
       title: "Switched sender/receiver compute from ESP32 to STM32",
@@ -702,6 +776,26 @@
       date: "Phase 2",
       title: "Frequency migration: 433MHz → 868MHz",
       detail: "The POC's 433MHz link topped out around 200m in field tests. Moving to 868MHz is the main lever for pushing past 500m range."
+    },
+    {
+      date: "Phase 2",
+      title: "On-site test of the 25m-range sensor candidate",
+      detail: "The DFRobot C4001 mmWave sensor was tested on-site and performed well; follow-up visits continued to validate the prototype over several days."
+    },
+    {
+      date: "Phase 2/3",
+      title: "Night testing rescheduled",
+      detail: "Extended overnight field testing was pushed to accommodate team travel, with some communication issues surfacing during multi-day runs and being resolved in the process."
+    },
+    {
+      date: "Phase 3 planning",
+      title: "Scoped three parallel hardware variants",
+      detail: "Alongside the core LiDAR upgrade, the team is scoping a commercial AI-camera variant and a separate IR-camera variant for animal identification. The IR variant needs its own research pass since it requires new hardware end-to-end."
+    },
+    {
+      date: "Phase 3 planning",
+      title: "Market study on longer-range sensors",
+      detail: "Reviewed radar options in the 50m class and LiDAR units in the 40–50m range (readily available options top out around 12m), to shortlist what Phase 3 will actually order."
     }
   ];
 
