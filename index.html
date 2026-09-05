@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WildWatch — Project Record</title>
+<meta name="description" content="WildWatch: radar and LoRa-based wildlife-safety and road-alert system. Timeline, development log, and project status.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a100d;
+    --bg-panel: #111a15;
+    --bg-panel-alt: #16211b;
+    --line: #253328;
+    --line-soft: #1b271f;
+    --text: #e9ede8;
+    --text-muted: #93a89a;
+    --text-dim: #5f7267;
+    --amber: #e3a23b;
+    --amber-dim: rgba(227,162,59,0.13);
+    --green: #6fe0a0;
+    --green-dim: rgba(111,224,160,0.13);
+    --red-dim: rgba(224,111,111,0.13);
+    --radius: 3px;
+    --measure: 720px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans', -apple-system, sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  h1,h2,h3{
+    font-family:'Oswald', 'IBM Plex Sans', sans-serif;
+    font-weight:600;
+    letter-spacing:0.2px;
+    margin:0;
+    color:var(--text);
+  }
+
+  a{color:var(--green); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  a:focus-visible, button:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
+
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  .wrap{
+    max-width:var(--measure);
+    margin:0 auto;
+    padding:0 24px;
+  }
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,16,13,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    max-width:var(--measure);
+    margin:0 auto;
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+  }
+  .nav-mark{
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:16px;
+    color:var(--text);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .nav-mark .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 0 3px var(--green-dim);
+    flex-shrink:0;
+  }
+  .nav-links{
+    display:flex; gap:20px;
+    font-size:14px;
+    color:var(--text-muted);
+    overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .nav-links::-webkit-scrollbar{display:none;}
+  .nav-links a{color:var(--text-muted); white-space:nowrap;}
+  .nav-links a:hover{color:var(--green); text-decoration:none;}
+
+  /* ---------- HERO ---------- */
+  header.hero{
+    position:relative;
+    overflow:hidden;
+    border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(ellipse 900px 500px at 88% -10%, rgba(111,224,160,0.07), transparent 60%),
+      var(--bg-panel);
+  }
+  .hero-inner{
+    max-width:var(--measure);
+    margin:0 auto;
+    padding:72px 24px 56px;
+    position:relative;
+    z-index:2;
+  }
+  .hero-eyebrow{
+    font-size:13px;
+    color:var(--text-dim);
+    margin-bottom:18px;
+  }
+  h1.title{
+    font-size:clamp(40px, 7vw, 64px);
+    line-height:1.02;
+    margin-bottom:20px;
+  }
+  .hero-tagline{
+    font-size:19px;
+    color:var(--text-muted);
+    max-width:52ch;
+    margin-bottom:32px;
+  }
+  .badges{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .badge{
+    font-size:13px;
+    color:var(--text-muted);
+    border:1px solid var(--line);
+    background:var(--bg-panel-alt);
+    padding:7px 12px;
+    border-radius:var(--radius);
+  }
+  .badge b{color:var(--text); font-weight:500;}
+
+  /* radar sweep decoration */
+  .radar{
+    position:absolute;
+    top:50%; right:-90px;
+    transform:translateY(-50%);
+    width:420px; height:420px;
+    z-index:1;
+    opacity:0.55;
+  }
+  @media (max-width:900px){ .radar{ display:none; } }
+  .radar svg{width:100%;height:100%;}
+  .radar-sweep{
+    transform-origin:210px 210px;
+    animation:sweep 4.5s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .radar-sweep{animation:none;}
+  }
+  @keyframes sweep{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+  /* ---------- SECTIONS ---------- */
+  section{
+    padding:64px 0;
+    border-bottom:1px solid var(--line);
+  }
+  section:last-of-type{border-bottom:none;}
+  .section-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:36px;
+  }
+  .section-num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--text-dim);
+  }
+  h2.section-title{
+    font-size:28px;
+  }
+  p{margin:0 0 16px 0; color:var(--text-muted);}
+  p:last-child{margin-bottom:0;}
+  p a{color:var(--green);}
+  strong{color:var(--text); font-weight:500;}
+
+  /* ---------- OVERVIEW ---------- */
+  .overview-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:28px;
+  }
+  .stat-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    margin-top:8px;
+  }
+  .stat{
+    background:var(--bg-panel-alt);
+    padding:18px 16px;
+  }
+  .stat-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:20px;
+    color:var(--green);
+    margin-bottom:4px;
+  }
+  .stat-label{
+    font-size:12.5px;
+    color:var(--text-dim);
+  }
+  @media (max-width:560px){ .stat-row{grid-template-columns:1fr 1fr;} }
+
+  /* ---------- TIMELINE ---------- */
+  .timeline{
+    position:relative;
+  }
+  .phase{
+    display:grid;
+    grid-template-columns:56px 1fr;
+    gap:20px;
+    position:relative;
+  }
+  .phase + .phase{margin-top:2px;}
+  .phase-rail{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .phase-num{
+    width:34px; height:34px;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:var(--bg-panel-alt);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--text-muted);
+    flex-shrink:0;
+  }
+  .phase.is-active .phase-num{
+    border-color:var(--green);
+    color:var(--green);
+    background:var(--green-dim);
+  }
+  .phase.is-done .phase-num{
+    border-color:var(--text-dim);
+    color:var(--text-muted);
+  }
+  .phase-line{
+    width:1px;
+    flex:1;
+    background:var(--line);
+    margin:4px 0;
+  }
+  .phase:last-child .phase-line{display:none;}
+  .phase-body{
+    padding-bottom:40px;
+  }
+  .phase-top{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  .phase-name{
+    font-family:'Oswald', sans-serif;
+    font-size:19px;
+    font-weight:500;
+    color:var(--text);
+  }
+  .pill{
+    font-size:11.5px;
+    font-family:'IBM Plex Mono', monospace;
+    padding:3px 8px;
+    border-radius:20px;
+    border:1px solid var(--line);
+  }
+  .pill.active{ color:var(--green); border-color:rgba(111,224,160,0.35); background:var(--green-dim); }
+  .pill.done{ color:var(--text-muted); border-color:var(--line); background:var(--bg-panel-alt); }
+  .pill.planned{ color:var(--amber); border-color:rgba(227,162,59,0.3); background:var(--amber-dim); }
+  .phase-duration{
+    font-size:13px;
+    color:var(--text-dim);
+    margin-bottom:12px;
+  }
+  .phase-actions{
+    margin:0;
+    padding-left:18px;
+    color:var(--text-muted);
+    font-size:14.5px;
+  }
+  .phase-actions li{margin-bottom:6px;}
+  .phase-actions li:last-child{margin-bottom:0;}
+
+  /* ---------- DEV LOG ---------- */
+  .log{
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--bg-panel-alt);
+    overflow:hidden;
+  }
+  .log-entry{
+    display:grid;
+    grid-template-columns:96px 1fr;
+    gap:18px;
+    padding:16px 18px;
+  }
+  .log-entry + .log-entry{border-top:1px solid var(--line-soft);}
+  .log-date{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    color:var(--text-dim);
+    padding-top:2px;
+  }
+  .log-title{
+    font-size:15px;
+    color:var(--text);
+    margin-bottom:4px;
+    font-weight:500;
+  }
+  .log-detail{
+    font-size:14px;
+    color:var(--text-muted);
+    margin:0;
+  }
+  .tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--text-dim);
+    border:1px solid var(--line);
+    padding:1px 6px;
+    border-radius:20px;
+    margin-left:8px;
+    vertical-align:middle;
+  }
+  @media (max-width:560px){
+    .log-entry{grid-template-columns:1fr; gap:4px;}
+  }
+
+  /* ---------- RECOGNITION ---------- */
+  .rec-list{
+    display:grid;
+    gap:20px;
+  }
+  .rec-item{
+    display:grid;
+    grid-template-columns:130px 1fr;
+    gap:20px;
+    padding-bottom:20px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .rec-item:last-child{border-bottom:none; padding-bottom:0;}
+  .rec-year{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--amber);
+  }
+  .rec-title{
+    color:var(--text);
+    font-weight:500;
+    margin-bottom:4px;
+  }
+  @media (max-width:560px){
+    .rec-item{grid-template-columns:1fr; gap:4px;}
+  }
+
+  /* ---------- TEAM ---------- */
+  .team-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px 28px;
+  }
+  @media (max-width:560px){ .team-grid{grid-template-columns:1fr;} }
+  .team-member{
+    padding:16px 0;
+    border-top:1px solid var(--line-soft);
+  }
+  .team-name{
+    color:var(--text);
+    font-weight:500;
+    margin-bottom:2px;
+  }
+  .team-role{
+    font-size:13.5px;
+    color:var(--text-dim);
+  }
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    padding:40px 0 60px;
+  }
+  .footer-grid{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:20px;
+  }
+  .footer-note{
+    font-size:13px;
+    color:var(--text-dim);
+    max-width:44ch;
+  }
+  .footer-links{
+    display:flex;
+    gap:18px;
+    font-size:13.5px;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-mark"><span class="dot"></span>WildWatch</div>
+    <div class="nav-links">
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#timeline">Timeline</a>
+      <a href="#log">Development log</a>
+      <a href="#recognition">Funding &amp; milestones</a>
+      <a href="#team">Team</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">FuturEarth Design Solutions · project record</div>
+    <h1 class="title">WildWatch</h1>
+    <p class="hero-tagline">A radar and LoRa alert system for animal-crossing corridors on forest roads. A radar module picks up an animal near the road edge, LoRa carries that alert to a roadside signal before the animal is in a driver's line of sight, and every event is logged to a cloud dashboard.</p>
+    <div class="badges">
+      <span class="badge"><b>Terra Carta Design Lab</b> — 2024 Global Award</span>
+      <span class="badge">Grant-funded by the <b>Sustainable Markets Initiative</b></span>
+      <span class="badge">Incubated at <b>NID Bengaluru</b></span>
+      <span class="badge">Field-tested at <b>IISc Bengaluru</b></span>
+    </div>
+  </div>
+  <div class="radar" aria-hidden="true">
+    <svg viewBox="0 0 420 420">
+      <circle cx="210" cy="210" r="180" fill="none" stroke="#253328" stroke-width="1"/>
+      <circle cx="210" cy="210" r="130" fill="none" stroke="#253328" stroke-width="1"/>
+      <circle cx="210" cy="210" r="80" fill="none" stroke="#253328" stroke-width="1"/>
+      <circle cx="210" cy="210" r="30" fill="none" stroke="#253328" stroke-width="1"/>
+      <line x1="30" y1="210" x2="390" y2="210" stroke="#253328" stroke-width="1"/>
+      <line x1="210" y1="30" x2="210" y2="390" stroke="#253328" stroke-width="1"/>
+      <circle cx="300" cy="150" r="4" fill="#6fe0a0"/>
+      <circle cx="140" cy="290" r="3" fill="#e3a23b"/>
+      <g class="radar-sweep">
+        <path d="M210 210 L210 30 A180 180 0 0 1 340 90 Z" fill="url(#sweepGrad)"/>
+      </g>
+      <defs>
+        <linearGradient id="sweepGrad" x1="210" y1="30" x2="340" y2="90" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#6fe0a0" stop-opacity="0.35"/>
+          <stop offset="1" stop-color="#6fe0a0" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="overview">
+    <div class="section-head">
+      <h2 class="section-title">Overview</h2>
+      <span class="section-num mono">01</span>
+    </div>
+    <div class="overview-grid">
+      <p>Vehicle-animal collisions on highways running through forest and wildlife corridors are, in most cases, a reaction-time problem rather than a detection problem — by the time a driver sees an animal, there often isn't enough road left to stop. WildWatch addresses this directly: a radar and LoRa alert chain that senses movement near the road edge and pushes an early warning to drivers before the animal is in their line of sight.</p>
+      <p>The project began as a Terra Carta Design Lab entry from the National Institute of Design, Ahmedabad, and has since moved from a validated proof of concept into iterative hardware development, incubated out of NID's Bengaluru campus and built in collaboration with IISc Bengaluru. This page is the single working record of that development: what phase the project is in, what's shipped, the real field numbers, and the specific engineering calls made along the way.</p>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="stat-value">Phase 2</div>
+          <div class="stat-label">Current development phase</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">~200m</div>
+          <div class="stat-label">Field range at 433MHz (IISc)</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">&lt;1s</div>
+          <div class="stat-label">Detection-to-alert response</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="architecture">
+    <div class="section-head">
+      <h2 class="section-title">System architecture</h2>
+      <span class="section-num mono">02</span>
+    </div>
+    <p>The system runs as a sender/receiver pair either side of a stretch of road. Everything downstream — mount design, sensor choices, connectivity — is built around keeping this chain fast and reliable in field conditions, not around a lab bench.</p>
+    <div class="stat-row" style="grid-template-columns:1fr 1fr;">
+      <div class="stat">
+        <div class="stat-value">HW-HB100 / RCWL-0516</div>
+        <div class="stat-label">Radar detection modules, roadside sender unit</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">LoRa</div>
+        <div class="stat-label">Wireless alert link, sender → receiver → signal</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">433MHz → 868MHz</div>
+        <div class="stat-label">Frequency migration in progress, targeting 500m+ range</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">&lt;5%</div>
+        <div class="stat-label">Packet loss measured at 433MHz, IISc field test</div>
+      </div>
+    </div>
+    <p style="margin-top:20px;">Detection triggers a roadside LED alert for approaching drivers and logs the event to a cloud dashboard, giving a record of crossing frequency and location over time — useful both for tuning sensor placement and for eventually making the case for where corridors need permanent signage.</p>
+  </section>
+
+  <section id="timeline">
+    <div class="section-head">
+      <h2 class="section-title">Timeline</h2>
+      <span class="section-num mono">03</span>
+    </div>
+
+    <div class="timeline" id="timeline-render"></div>
+  </section>
+
+  <section id="log">
+    <div class="section-head">
+      <h2 class="section-title">Development log</h2>
+      <span class="section-num mono">04</span>
+    </div>
+    <p style="margin-bottom:24px;">A running record of the specific technical decisions behind the current prototype — kept here so the reasoning isn't lost between iterations.</p>
+    <div class="log" id="log-render"></div>
+  </section>
+
+  <section id="recognition">
+    <div class="section-head">
+      <h2 class="section-title">Funding &amp; milestones</h2>
+      <span class="section-num mono">05</span>
+    </div>
+    <div class="rec-list">
+      <div class="rec-item">
+        <div class="rec-year">2024</div>
+        <div>
+          <div class="rec-title">Terra Carta Design Lab — Global Award</div>
+          <p>WildWatch was selected as a Global Award winner in the Terra Carta Design Lab, an initiative launched by King Charles III and Sir Jony Ive with the Royal College of Art, recognising design and technology that address the climate and biodiversity crisis. The award is funded by the Sustainable Markets Initiative, released against progress milestones.</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-year">May 2026</div>
+        <div>
+          <div class="rec-title">Proof of concept completed</div>
+          <p>Phase 1 closed out with a working POC, validated in the field at IISc Bengaluru.</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-year">May 2026</div>
+        <div>
+          <div class="rec-title">Meeting with UP Chief Minister Yogi Adityanath</div>
+          <p>Presented WildWatch in Lucknow as a candidate for a potential state-level pilot.</p>
+        </div>
+      </div>
+      <div class="rec-item">
+        <div class="rec-year">Ongoing</div>
+        <div>
+          <div class="rec-title">Independent field validation at IISc Bengaluru</div>
+          <p>Range, response time, and packet-loss testing for each hardware revision is carried out at IISc Bengaluru.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="team">
+    <div class="section-head">
+      <h2 class="section-title">Team</h2>
+      <span class="section-num mono">06</span>
+    </div>
+    <div class="team-grid">
+      <div class="team-member">
+        <div class="team-name">Tanmay Karan</div>
+        <div class="team-role">Co-founder</div>
+      </div>
+      <div class="team-member">
+        <div class="team-name">Chinmay Karan</div>
+        <div class="team-role">Co-founder</div>
+      </div>
+      <div class="team-member">
+        <div class="team-name">Rakesh Kumar</div>
+        <div class="team-role">Embedded systems — firmware, PCB, hardware build</div>
+      </div>
+      <div class="team-member">
+        <div class="team-name">Bhaiya</div>
+        <div class="team-role">Senior technical advisor — design and engineering guidance</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap footer-grid">
+    <div class="footer-note">Maintained by the FuturEarth Design Solutions team. Edit the <span class="mono">timelineData</span> and <span class="mono">logData</span> arrays in this file's script to update phases and log entries — everything on the page renders from them. This is the public version; grant financials and internal notes live in the team's private record, not here.</div>
+    <div class="footer-links">
+      <a href="https://futurearth.co" target="_blank" rel="noopener">futurearth.co</a>
+      <a href="mailto:tanmay@futurearth.co">tanmay@futurearth.co</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ---- Edit these two arrays to update the page. Everything below renders from them. ----
+
+  const timelineData = [
+    {
+      name: "Proof of concept",
+      status: "done", // done | active | planned
+      duration: "Completed May 2026",
+      actions: [
+        "Terra Carta Design Lab Global Award — concept recognised and funded (2024)",
+        "HW-HB100 / RCWL-0516 radar + LoRa alert chain built and field-tested at IISc Bengaluru",
+        "Field numbers: ~200m range, <1s detection-to-alert response, <5% packet loss at 433MHz",
+        "Development base established at NID Ahmedabad's Bengaluru campus"
+      ]
+    },
+    {
+      name: "Sensor & range upgrade",
+      status: "active",
+      duration: "Current phase · targeting completion in September",
+      actions: [
+        "Migrating sender/receiver compute from ESP32 to STM32 to remove RF interference between the board's three onboard radios",
+        "GSM connectivity added to the sender unit as an independent link alongside LoRa",
+        "Frequency migration from 433MHz to 868MHz in progress, targeting 500m+ range",
+        "Fresh hardware build each iteration, with prior units retained for comparison"
+      ]
+    },
+    {
+      name: "LiDAR prototype",
+      status: "planned",
+      duration: "Planned · October – November",
+      actions: [
+        "Introduce LiDAR sensing alongside the existing radar package",
+        "Evaluate detection range and accuracy gains against the Phase 2 baseline"
+      ]
+    },
+    {
+      name: "Extended field validation",
+      status: "planned",
+      duration: "Planned",
+      actions: [
+        "Deployed field testing across a longer duration and a wider range of conditions"
+      ]
+    },
+    {
+      name: "Final product",
+      status: "planned",
+      duration: "Planned",
+      actions: [
+        "Consolidate learnings from prior phases into the production-ready system"
+      ]
+    }
+  ];
+
+  const logData = [
+    {
+      date: "Phase 2",
+      title: "Switched sender/receiver compute from ESP32 to STM32",
+      detail: "Three radios sharing a single ESP32 board were causing RF interference with each other. Moving to STM32 gives the radios enough separation to operate cleanly."
+    },
+    {
+      date: "Phase 2",
+      title: "Added GSM to the sender unit",
+      detail: "Gives the sender unit an independent connectivity path rather than relying solely on the LoRa mesh."
+    },
+    {
+      date: "Phase 2",
+      title: "Flagged BNO086 as a range risk",
+      detail: "The BNO086 orientation sensor was identified as a likely contributor to reduced LoRa range and is under review for replacement."
+    },
+    {
+      date: "Phase 2",
+      title: "Adopted a fresh-build versioning policy",
+      detail: "Each hardware iteration is built fresh rather than modified in place, with prior units retained so revisions can be compared directly."
+    },
+    {
+      date: "Phase 2",
+      title: "Frequency migration: 433MHz → 868MHz",
+      detail: "The POC's 433MHz link topped out around 200m in field tests. Moving to 868MHz is the main lever for pushing past 500m range."
+    }
+  ];
+
+  function statusLabel(s){
+    if(s === "done") return "Done";
+    if(s === "active") return "Active";
+    return "Planned";
+  }
+
+  function renderTimeline(){
+    const el = document.getElementById("timeline-render");
+    el.innerHTML = timelineData.map((phase, i) => `
+      <div class="phase is-${phase.status}">
+        <div class="phase-rail">
+          <div class="phase-num">${i + 1}</div>
+          <div class="phase-line"></div>
+        </div>
+        <div class="phase-body">
+          <div class="phase-top">
+            <div class="phase-name">${phase.name}</div>
+            <span class="pill ${phase.status}">${statusLabel(phase.status)}</span>
+          </div>
+          <div class="phase-duration">${phase.duration}</div>
+          <ul class="phase-actions">
+            ${phase.actions.map(a => `<li>${a}</li>`).join("")}
+          </ul>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderLog(){
+    const el = document.getElementById("log-render");
+    el.innerHTML = logData.map(entry => `
+      <div class="log-entry">
+        <div class="log-date">${entry.date}</div>
+        <div>
+          <div class="log-title">${entry.title}</div>
+          <p class="log-detail">${entry.detail}</p>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  renderTimeline();
+  renderLog();
+</script>
+
+</body>
+</html>
